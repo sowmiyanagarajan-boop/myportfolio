@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --green: #00e676;
+    --red: #ff1744;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --card: #15151f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .last-updated {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* Summary Cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0.6;
+  }
+
+  .summary-card:hover { border-color: var(--accent); }
+
+  .summary-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .summary-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .summary-change {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 10px;
+    width: fit-content;
+  }
+
+  .tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Section Header */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .add-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .add-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .add-btn:active { transform: translateY(0); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody td {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .ticker {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .company-name { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .price { font-weight: 500; }
+
+  .change-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .change-badge.pos { background: rgba(0,230,118,0.12); color: var(--green); }
+  .change-badge.neg { background: rgba(255,23,68,0.12); color: var(--red); }
+
+  .action-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+    margin-left: 4px;
+  }
+
+  .action-btn:hover { border-color: var(--red); color: var(--red); }
+  .action-btn.buy:hover { border-color: var(--green); color: var(--green); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+  }
+
+  .submit-btn:hover { opacity: 0.85; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Allocation bar */
+  .alloc-bar-wrap { margin-top: 24px; }
+  .alloc-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .alloc-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; display: flex; gap: 2px; }
+  .alloc-seg { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
+  @media (max-width: 600px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    thead th:nth-child(4), tbody td:nth-child(4),
+    thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">PORT<span>.</span>FOLIO</div>
+    <div class="last-updated" id="lastUpdated">Updated: --</div>
+  </header>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card">
+      <div class="summary-label">Total Value</div>
+      <div class="summary-value" id="totalValue">$0.00</div>
+      <div class="summary-change" id="totalChange">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Day's P&L</div>
+      <div class="summary-value" id="dayPL">$0.00</div>
+      <div class="summary-change" id="dayPLPct">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Invested</div>
+      <div class="summary-value" id="totalInvested">$0.00</div>
+      <div class="summary-change" id="totalReturn">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Holdings</div>
+      <div class="summary-value" id="holdingsCount">0</div>
+      <div class="summary-change" id="watchlistCount" style="color:var(--muted)">0 on watchlist</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('portfolio')">Portfolio</button>
+    <button class="tab" onclick="switchTab('watchlist')">Watchlist</button>
+  </div>
+
+  <!-- Portfolio Panel -->
+  <div class="panel active" id="portfolioPanel">
+    <div class="section-header">
+      <div class="section-title">Holdings</div>
+      <button class="add-btn" onclick="openModal('portfolio')">+ Add Holding</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Shares</th>
+            <th>Avg Cost</th>
+            <th>Value</th>
+            <th>P&L</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+      </table>
+      <div class="empty-state" id="portfolioEmpty">
+        <div class="icon">📊</div>
+        <div>No holdings yet. Add your first position.</div>
+      </div>
+    </div>
+    <div class="alloc-bar-wrap" id="allocWrap" style="display:none">
+      <div class="alloc-bar-label"><span>Allocation</span></div>
+      <div class="alloc-bar" id="allocBar"></div>
+    </div>
+  </div>
+
+  <!-- Watchlist Panel -->
+  <div class="panel" id="watchlistPanel">
+    <div class="section-header">
+      <div class="section-title">Watchlist</div>
+      <button class="add-btn" onclick="openModal('watchlist')">+ Add to Watchlist</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>52W High</th>
+            <th>52W Low</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="watchlistBody"></tbody>
+      </table>
+      <div class="empty-state" id="watchlistEmpty">
+        <div class="icon">👁</div>
+        <div>Your watchlist is empty. Add stocks to monitor.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Portfolio Modal -->
+<div class="modal-overlay" id="portfolioModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('portfolio')">✕</button>
+    <div class="modal-title">Add Holding</div>
+    <div class="form-group">
+      <label class="form-label">Ticker Symbol</label>
+      <input class="form-input" id="p-ticker" placeholder="e.g. AAPL" style="text-transform:uppercase">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Company Name</label>
+      <input class="form-input" id="p-name" placeholder="e.g. Apple Inc.">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Current Price ($)</label>
+        <input class="form-input" id="p-price" type="number" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Shares Owned</label>
+        <input class="form-input" id="p-shares" type="number" placeholder="0" step="0.001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Avg Cost Basis ($)</label>
+        <input class="form-input" id="p-cost" type="number" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Day Change (%)</label>
+        <input class="form-input" id="p-change" type="number" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+    <button class="submit-btn" onclick="addHolding()">Add Holding</button>
+  </div>
+</div>
+
+<!-- Watchlist Modal -->
+<div class="modal-overlay" id="watchlistModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('watchlist')">✕</button>
+    <div class="modal-title">Add to Watchlist</div>
+    <div class="form-group">
+      <label class="form-label">Ticker Symbol</label>
+      <input class="form-input" id="w-ticker" placeholder="e.g. TSLA" style="text-transform:uppercase">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Company Name</label>
+      <input class="form-input" id="w-name" placeholder="e.g. Tesla Inc.">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Current Price ($)</label>
+        <input class="form-input" id="w-price" type="number" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Day Change (%)</label>
+        <input class="form-input" id="w-change" type="number" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">52W High ($)</label>
+        <input class="form-input" id="w-high" type="number" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">52W Low ($)</label>
+        <input class="form-input" id="w-low" type="number" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <input class="form-input" id="w-notes" placeholder="Why watching this?">
+    </div>
+    <button class="submit-btn" onclick="addWatchlist()">Add to Watchlist</button>
+  </div>
+</div>
+
+<script>
+  // State - load from localStorage
+  let portfolio = JSON.parse(localStorage.getItem('pf_portfolio') || '[]');
+  let watchlist = JSON.parse(localStorage.getItem('pf_watchlist') || '[]');
+
+  const COLORS = ['#00e5ff','#7c3aed','#00e676','#ff9100','#ff1744','#e040fb','#1de9b6','#ffea00'];
+
+  function save() {
+    localStorage.setItem('pf_portfolio', JSON.stringify(portfolio));
+    localStorage.setItem('pf_watchlist', JSON.stringify(watchlist));
+  }
+
+  function fmt(n, dec=2) {
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  }
+
+  function fmtMoney(n) { return '$' + fmt(n); }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='portfolio')||(i===1&&tab==='watchlist')));
+    document.getElementById('portfolioPanel').classList.toggle('active', tab==='portfolio');
+    document.getElementById('watchlistPanel').classList.toggle('active', tab==='watchlist');
+  }
+
+  function openModal(type) {
+    document.getElementById(type+'Modal').classList.add('open');
+  }
+
+  function closeModal(type) {
+    document.getElementById(type+'Modal').classList.remove('open');
+  }
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if(e.target === el) el.classList.remove('open'); });
+  });
+
+  function addHolding() {
+    const ticker = document.getElementById('p-ticker').value.trim().toUpperCase();
+    const name = document.getElementById('p-name').value.trim();
+    const price = parseFloat(document.getElementById('p-price').value);
+    const shares = parseFloat(document.getElementById('p-shares').value);
+    const cost = parseFloat(document.getElementById('p-cost').value);
+    const change = parseFloat(document.getElementById('p-change').value) || 0;
+
+    if (!ticker || !price || !shares || !cost) { alert('Please fill in all required fields.'); return; }
+
+    portfolio.push({ id: Date.now(), ticker, name: name||ticker, price, shares, cost, change });
+    save(); render();
+    closeModal('portfolio');
+    ['p-ticker','p-name','p-price','p-shares','p-cost','p-change'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function addWatchlist() {
+    const ticker = document.getElementById('w-ticker').value.trim().toUpperCase();
+    const name = document.getElementById('w-name').value.trim();
+    const price = parseFloat(document.getElementById('w-price').value);
+    const change = parseFloat(document.getElementById('w-change').value) || 0;
+    const high = parseFloat(document.getElementById('w-high').value) || null;
+    const low = parseFloat(document.getElementById('w-low').value) || null;
+    const notes = document.getElementById('w-notes').value.trim();
+
+    if (!ticker || !price) { alert('Ticker and price are required.'); return; }
+
+    watchlist.push({ id: Date.now(), ticker, name: name||ticker, price, change, high, low, notes });
+    save(); render();
+    closeModal('watchlist');
+    ['w-ticker','w-name','w-price','w-change','w-high','w-low','w-notes'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function removePortfolio(id) {
+    portfolio = portfolio.filter(h => h.id !== id);
+    save(); render();
+  }
+
+  function removeWatchlist(id) {
+    watchlist = watchlist.filter(h => h.id !== id);
+    save(); render();
+  }
+
+  function moveToPortfolio(id) {
+    const item = watchlist.find(w => w.id === id);
+    if (!item) return;
+    const shares = prompt('How many shares do you own?');
+    const cost = prompt('What was your average cost per share?');
+    if (!shares || !cost) return;
+    portfolio.push({ id: Date.now(), ticker: item.ticker, name: item.name, price: item.price, shares: parseFloat(shares), cost: parseFloat(cost), change: item.change });
+    watchlist = watchlist.filter(w => w.id !== id);
+    save(); render();
+    switchTab('portfolio');
+  }
+
+  function render() {
+    renderPortfolio();
+    renderWatchlist();
+    renderSummary();
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  }
+
+  function renderPortfolio() {
+    const tbody = document.getElementById('portfolioBody');
+    const empty = document.getElementById('portfolioEmpty');
+    const allocWrap = document.getElementById('allocWrap');
+    tbody.innerHTML = '';
+
+    if (portfolio.length === 0) {
+      empty.style.display = 'block';
+      allocWrap.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    allocWrap.style.display = 'block';
+
+    const totalVal = portfolio.reduce((s, h) => s + h.price * h.shares, 0);
+
+    portfolio.forEach((h, i) => {
+      const value = h.price * h.shares;
+      const invested = h.cost * h.shares;
+      const pl = value - invested;
+      const plPct = ((pl / invested) * 100);
+      const dayPL = value * (h.change / 100);
+      const isPos = pl >= 0;
+      const isDayPos = h.change >= 0;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div class="ticker">${h.ticker}</div>
+          <div class="company-name">${h.name}</div>
+        </td>
+        <td class="price">${fmtMoney(h.price)}</td>
+        <td><span class="change-badge ${isDayPos?'pos':'neg'}">${isDayPos?'+':''}${fmt(h.change)}%</span></td>
+        <td>${fmt(h.shares,3)}</td>
+        <td>${fmtMoney(h.cost)}</td>
+        <td>${fmtMoney(value)}</td>
+        <td class="${isPos?'pos':'neg'}">${isPos?'+':''}${fmtMoney(pl)}<br><span style="font-size:10px;opacity:0.7">${isPos?'+':''}${fmt(plPct)}%</span></td>
+        <td>
+          <button class="action-btn" onclick="removePortfolio(${h.id})">✕ Remove</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Allocation bar
+    const bar = document.getElementById('allocBar');
+    bar.innerHTML = '';
+    portfolio.forEach((h, i) => {
+      const pct = ((h.price * h.shares) / totalVal * 100).toFixed(1);
+      const seg = document.createElement('div');
+      seg.className = 'alloc-seg';
+      seg.style.width = pct + '%';
+      seg.style.background = COLORS[i % COLORS.length];
+      seg.title = `${h.ticker}: ${pct}%`;
+      bar.appendChild(seg);
+    });
+  }
+
+  function renderWatchlist() {
+    const tbody = document.getElementById('watchlistBody');
+    const empty = document.getElementById('watchlistEmpty');
+    tbody.innerHTML = '';
+
+    if (watchlist.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    watchlist.forEach(h => {
+      const isDayPos = h.change >= 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div class="ticker">${h.ticker}</div>
+          <div class="company-name">${h.name}</div>
+        </td>
+        <td class="price">${fmtMoney(h.price)}</td>
+        <td><span class="change-badge ${isDayPos?'pos':'neg'}">${isDayPos?'+':''}${fmt(h.change)}%</span></td>
+        <td>${h.high ? fmtMoney(h.high) : '—'}</td>
+        <td>${h.low ? fmtMoney(h.low) : '—'}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:150px">${h.notes||'—'}</td>
+        <td>
+          <button class="action-btn buy" onclick="moveToPortfolio(${h.id})">→ Buy</button>
+          <button class="action-btn" onclick="removeWatchlist(${h.id})">✕</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderSummary() {
+    const totalValue = portfolio.reduce((s,h) => s + h.price * h.shares, 0);
+    const totalInvested = portfolio.reduce((s,h) => s + h.cost * h.shares, 0);
+    const totalReturn = totalValue - totalInvested;
+    const totalReturnPct = totalInvested > 0 ? (totalReturn/totalInvested*100) : 0;
+    const dayPL = portfolio.reduce((s,h) => s + (h.price * h.shares * h.change / 100), 0);
+    const dayPLPct = totalValue > 0 ? (dayPL/totalValue*100) : 0;
+
+    document.getElementById('totalValue').textContent = fmtMoney(totalValue);
+    document.getElementById('totalChange').innerHTML = `<span class="${totalReturn>=0?'pos':'neg'}">${totalReturn>=0?'+':''}${fmtMoney(totalReturn)} all time</span>`;
+    document.getElementById('dayPL').textContent = (dayPL>=0?'+':'')+fmtMoney(dayPL);
+    document.getElementById('dayPL').className = 'summary-value ' + (dayPL>=0?'pos':'neg');
+    document.getElementById('dayPLPct').innerHTML = `<span class="${dayPL>=0?'pos':'neg'}">${dayPL>=0?'+':''}${fmt(dayPLPct)}% today</span>`;
+    document.getElementById('totalInvested').textContent = fmtMoney(totalInvested);
+    document.getElementById('totalReturn').innerHTML = `<span class="${totalReturn>=0?'pos':'neg'}">${totalReturn>=0?'+':''}${fmt(totalReturnPct)}% return</span>`;
+    document.getElementById('holdingsCount').textContent = portfolio.length;
+    document.getElementById('watchlistCount').textContent = watchlist.length + ' on watchlist';
+  }
+
+  // Keyboard shortcut: Escape to close modals
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  });
+
+  // Auto uppercase ticker inputs
+  ['p-ticker','w-ticker'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
+  });
+
+  render();
+</script>
+</body>
+</html>
